@@ -2,6 +2,7 @@
 
 import sqlite3
 import sys
+import subprocess
 import tarfile
 import urllib.request
 
@@ -40,6 +41,7 @@ def FixDatabaseGroups(dbFile):
 
 	numErrors = 0
 	for bg in belongsGroup:
+		print ('Checking group %s' % bg[0])
 		query = 'SELECT * FROM groups WHERE name=\'%s\'' % bg[0]
 		group = cursor.execute(query).fetchall()
 
@@ -53,31 +55,38 @@ def FixDatabaseGroups(dbFile):
 	c.close()
 	return (numErrors == 0)
 
-# 1. sign database;
-# 2. Rename old files.
-# 3. Upload db and signature.
-# 4. Remove lock.
-def UploadNewDatabase(dbFile):
-	pass
+# tarfile does not support compressing TAR archives to XZ, only
+# gzip or bzip2. Easier this way I guess.
+def CompressDatabase(dbFile, archiveFileName):
+	return (subprocess.call(['tar', 'cfJ', archiveFileName, dbFile]) == 0)
+
+# FIXME: use python-gnupg once I have compiled it for python3.
+def SignArchive(archiveFile):
+	subprocess.call(['gpg', '--sign', archiveFile])
 
 if __name__ == '__main__':
 	if len(sys.argv) == 1:
 		print('Usage: %s repo-name ' % sys.argv[0])
 		exit(-1)
 
-	# TODO: acquire lock here
+	repo = sys.argv[1]
+
 	archiveFile = DownloadDatabase(repo)
 
 	with tarfile.open(archiveFile) as f:
 		f.extractall('.')
 	print('[**] Decompressed database')
 
-	success = FixDatabaseGroups(GetDatabaseFile(repo))
+	dbFile = GetDatabaseFile(repo)
+	success = FixDatabaseGroups(dbFile)
 	if success:
 		print ('[**] Packages groups fixed successfully in the database.')
 	else:
 		print ('[!!] Errors occurred. Exiting...')
 		exit(-1)
 
-	UploadNewDatabase(GetDatabaseFile(repo))
+	if not CompressDatabase(dbFile, archiveFile):
+		print ("[!!] Error compressing database file.")
 
+	print ('[**] Compressed database.')
+	SignArchive(archiveFile)
