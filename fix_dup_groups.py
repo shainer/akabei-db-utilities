@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import os
 import sqlite3
 import sys
 import subprocess
@@ -61,8 +62,11 @@ def CompressDatabase(dbFile, archiveFileName):
 	return (subprocess.call(['tar', 'cfJ', archiveFileName, dbFile]) == 0)
 
 # FIXME: use python-gnupg once I have compiled it for python3.
-def SignArchive(archiveFile):
-	subprocess.call(['gpg', '--sign', archiveFile])
+def SignArchive(archiveFileName):
+	subprocess.call(['gpg', '--sign', archiveFileName])
+	sigName = '%s.gpg' % archiveFileName
+	newSigName = '%s.sig' % archiveFileName
+	os.rename(sigName, newSigName)
 
 if __name__ == '__main__':
 	if len(sys.argv) == 1:
