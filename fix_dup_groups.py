@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
+import gnupg
 import os
 import sqlite3
 import sys
-import subprocess
 import tarfile
 import urllib.request
 
@@ -62,12 +62,12 @@ def CompressDatabase(dbFile, archiveFileName):
     tf.close()
     return True
 
-# FIXME: use python-gnupg once I have compiled it for python3.
 def SignArchive(archiveFileName):
-	subprocess.call(['gpg', '--sign', archiveFileName])
-	sigName = '%s.gpg' % archiveFileName
-	newSigName = '%s.sig' % archiveFileName
-	os.rename(sigName, newSigName)
+	gpg = gnupg.GPG()
+	sigName = '%s.sig' % archiveFileName	
+
+	archiveFile = open(archiveFileName, 'rb')
+	gpg.sign_file(archiveFile, output=sigName)
 
 if __name__ == '__main__':
 	if len(sys.argv) == 1:
