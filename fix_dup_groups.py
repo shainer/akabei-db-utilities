@@ -56,10 +56,11 @@ def FixDatabaseGroups(dbFile):
 	c.close()
 	return (numErrors == 0)
 
-# tarfile does not support compressing TAR archives to XZ, only
-# gzip or bzip2. Easier this way I guess.
 def CompressDatabase(dbFile, archiveFileName):
-	return (subprocess.call(['tar', 'cfJ', archiveFileName, dbFile]) == 0)
+    tf = tarfile.open(name=archiveFileName, mode='w:xz')
+    tf.add(dbFile)
+    tf.close()
+    return True
 
 # FIXME: use python-gnupg once I have compiled it for python3.
 def SignArchive(archiveFileName):
